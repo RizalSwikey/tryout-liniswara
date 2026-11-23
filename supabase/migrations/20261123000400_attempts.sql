@@ -59,8 +59,8 @@ begin
 end;
 $$;
 
-revoke all on function public.finalize_attempt(uuid) from public, anon;
-grant execute on function public.finalize_attempt(uuid) to authenticated;
+revoke all on function public.finalize_attempt(uuid) from public, anon, authenticated;
+-- finalize_attempt hanya dipanggil dari fungsi security definer lain (owner), bukan klien.
 
 create or replace function public.attempt_payload(p_attempt uuid)
 returns jsonb
