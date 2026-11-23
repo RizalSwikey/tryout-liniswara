@@ -1,0 +1,111 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-ui);
+  --font-heading: var(--font-heading);
+
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted-ink: var(--muted-ink);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-foreground: #ffffff;
+  --color-accent: var(--accent);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-mark: var(--mark);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--ink);
+  --color-secondary: var(--paper-deep);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--paper-deep);
+  --color-muted-foreground: var(--muted-ink);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: #b3261e;
+  --color-border: var(--line);
+  --color-input: var(--line-strong);
+  --color-ring: var(--primary);
+
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 6px;
+  --radius-2xl: 6px;
+  --radius-3xl: 6px;
+  --radius-4xl: 6px;
+}
+
+:root {
+  --paper: #f9fafb;
+  --paper-deep: #f1f4f7;
+  --surface: #ffffff;
+  --ink: #172636;
+  --muted-ink: #52616f;
+  --primary: #006bb2;
+  --primary-dark: #00538a;
+  --accent: #f8c630;
+  --line: #e2e8f0;
+  --line-strong: #8896a5;
+  --ok: #157f4b;
+  --warn: #b45309;
+  --mark: #e63c70;
+
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --radius: 6px;
+}
+
+@layer base {
+  * {
+    @apply border-line;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper text-ink;
+    font-family: var(--font-ui), system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-heading), Georgia, serif;
+    letter-spacing: -0.01em;
+    line-height: 1.18;
+  }
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--ink);
+  }
+}
+
+@utility stimulus {
+  font-family: var(--font-heading), Georgia, serif;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.prose-block p {
+  margin-bottom: 0.85em;
+}
+.prose-block p:last-child {
+  margin-bottom: 0;
+}
