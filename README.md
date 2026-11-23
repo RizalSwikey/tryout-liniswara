@@ -189,8 +189,9 @@ docs/design-brief.md             brief desain (acuan visual)
 | `pnpm build` | lulus, 13 route terbentuk |
 | `pnpm db:test` (Postgres 18, migrasi + seed) | lulus: anon ditolak di semua tabel; user tanpa langganan tidak melihat materi/tryout; redeem sukses memperpanjang 30 → 37 hari; kode kedaluwarsa/nonaktif/tidak dikenal/dipakai ulang/kuota habis ditolak dengan kode error yang benar; payload attempt aktif tidak memuat `is_true`/`explanation`; skor dihitung server = 1 dari 3 pada data uji; submit ganda ditolak; attempt lewat deadline auto-finalisasi dengan skor 0 |
 | Kunci tidak bocor | diperiksa di dua tempat: (a) uji SQL memastikan payload aktif tanpa `is_true`/`explanation`, (b) `statements` tanpa policy dan tanpa grant untuk `authenticated` |
-| Alur penuh di dev server + URL produksi | **belum dijalankan** (butuh kredensial Supabase asli) |
-| Tampilan 375px / desktop | **belum diverifikasi visual** |
+| Alur penuh di dev server + URL produksi | **belum dijalankan** (butuh kredensial Supabase asli); yang sudah dicek: route terproteksi tanpa sesi mengembalikan 307 ke `/masuk?next=…`, landing/masuk/daftar 200 |
+| Tampilan 375px | dicek dengan Chrome headless: landing, masuk, daftar, dan halaman soal (payload contoh) tanpa scroll horizontal (`scrollWidth == clientWidth == 375`); target sentuh tombol Benar/Salah 44px |
+| Demo soal di landing | diklik di browser: 3 jawaban → penghitung `3/3 dijawab`, pembahasan per pernyataan muncul |
 
 ## 8. Penggunaan AI assistant
 

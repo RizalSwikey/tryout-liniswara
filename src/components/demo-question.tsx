@@ -80,7 +80,7 @@ export function DemoQuestion() {
                       />
                       <label
                         htmlFor={id}
-                        className={`flex h-9 cursor-pointer items-center justify-center gap-1 rounded-sm border text-sm font-medium select-none peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 ${
+                        className={`flex h-11 cursor-pointer items-center justify-center gap-1 rounded-sm border text-sm font-medium select-none peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 ${
                           selected
                             ? "border-primary bg-primary text-white"
                             : "border-line-strong text-ink hover:bg-paper"
@@ -116,7 +116,7 @@ export function DemoQuestion() {
         <button
           type="button"
           onClick={() => setAnswers({})}
-          className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-line-strong px-3 text-sm font-medium text-ink hover:bg-paper"
+          className="inline-flex h-11 items-center gap-1.5 rounded-sm border border-line-strong px-3 text-sm font-medium text-ink hover:bg-paper"
         >
           <RotateCcw aria-hidden="true" className="size-3.5" />
           Ulangi contoh

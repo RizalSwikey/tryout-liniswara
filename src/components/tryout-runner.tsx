@@ -223,20 +223,22 @@ export function TryoutRunner({ attempt }: { attempt: AttemptPayload }) {
         </div>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface px-4 py-3">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
-          <p className="text-sm text-muted-ink">
-            Terjawab <span className="tnum font-medium text-ink">{answeredCount}</span> dari {questions.length} soal
-          </p>
-          <button
-            type="button"
-            onClick={() => setConfirmOpen(true)}
-            className="inline-flex h-11 items-center rounded-sm bg-primary px-4 text-sm font-medium text-white hover:bg-primary-dark"
-          >
-            Kirim jawaban
-          </button>
+      {!menuOpen && !confirmOpen && (
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface px-4 py-3">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+            <p className="text-sm text-muted-ink">
+              Terjawab <span className="tnum font-medium text-ink">{answeredCount}</span> dari {questions.length} soal
+            </p>
+            <button
+              type="button"
+              onClick={() => setConfirmOpen(true)}
+              className="inline-flex h-11 items-center rounded-sm bg-primary px-4 text-sm font-medium text-white hover:bg-primary-dark"
+            >
+              Kirim jawaban
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {menuOpen && (
         <div className="fixed inset-0 z-40" role="dialog" aria-modal="true" aria-labelledby="nomor-soal">
