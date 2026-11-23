@@ -2,7 +2,7 @@
 
 Website tryout online untuk penerbit Liniswara (PT Lini Suara Nusantara). Pengguna mendaftar, memasukkan kode akses, menonton materi video, lalu mengerjakan tryout 10 soal berisi 3 pernyataan Benar/Salah per soal. Skor dihitung di server.
 
-- **Demo:** https://tryout-liniswara.vercel.app
+- **Demo:** belum dideploy. Langkahnya ada di bagian 8.
 - **Repo:** https://github.com/RizalSwikey/tryout-liniswara
 - **Kode redeem untuk penilai:** `LINIS30HARI1` (aktif 30 hari, 100 pemakaian)
 
@@ -186,14 +186,36 @@ docs/design-brief.md             brief desain (acuan visual)
 | --- | --- |
 | `pnpm lint` | lulus, tanpa error/warning |
 | `pnpm typecheck` | lulus, tanpa error |
-| `pnpm build` | lulus, 13 route terbentuk |
+| `pnpm build` | lulus, 10 route halaman + `Proxy (Middleware)` |
 | `pnpm db:test` (Postgres 18, migrasi + seed) | lulus: anon ditolak di semua tabel; user tanpa langganan tidak melihat materi/tryout; redeem sukses memperpanjang 30 → 37 hari; kode kedaluwarsa/nonaktif/tidak dikenal/dipakai ulang/kuota habis ditolak dengan kode error yang benar; payload attempt aktif tidak memuat `is_true`/`explanation`; skor dihitung server = 1 dari 3 pada data uji; submit ganda ditolak; attempt lewat deadline auto-finalisasi dengan skor 0 |
 | Kunci tidak bocor | diperiksa di dua tempat: (a) uji SQL memastikan payload aktif tanpa `is_true`/`explanation`, (b) `statements` tanpa policy dan tanpa grant untuk `authenticated` |
 | Alur penuh di dev server + URL produksi | **belum dijalankan** (butuh kredensial Supabase asli); yang sudah dicek: route terproteksi tanpa sesi mengembalikan 307 ke `/masuk?next=…`, landing/masuk/daftar 200 |
 | Tampilan 375px | dicek dengan Chrome headless: landing, masuk, daftar, dan halaman soal (payload contoh) tanpa scroll horizontal (`scrollWidth == clientWidth == 375`); target sentuh tombol Benar/Salah 44px |
 | Demo soal di landing | diklik di browser: 3 jawaban → penghitung `3/3 dijawab`, pembahasan per pernyataan muncul |
 
-## 8. Penggunaan AI assistant
+## 8. Deploy
+
+### Supabase
+
+1. Buat project di dashboard Supabase (region terdekat, mis. Singapore). Catat `Project URL` dan `anon public key` dari Project Settings → API.
+2. Jalankan SQL di `supabase/migrations/` berurutan (000100 → 000400) lewat SQL Editor, lalu `supabase/seed.sql`.
+3. Authentication → Providers → Email: matikan "Confirm email" bila penilai harus bisa langsung masuk setelah daftar.
+4. Jangan menyalin service role key ke mana pun di repo. Aplikasi hanya memakai anon key; semua penulisan istimewa lewat fungsi `security definer`.
+
+### Vercel
+
+```bash
+vercel link
+vercel env add NEXT_PUBLIC_SUPABASE_URL production
+vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
+vercel --prod
+```
+
+Atau lewat dashboard: Add New → Project → impor `RizalSwikey/tryout-liniswara` → Framework Preset Next.js (terdeteksi otomatis, build `pnpm build`) → tambahkan dua environment variable di atas untuk Production/Preview/Development → Deploy.
+
+Setelah deploy, uji di URL produksi: daftar, masuk, `/materi` terkunci, redeem `LINIS30HARI1`, materi terbuka, kerjakan tryout, kirim, skor dan pembahasan tampil.
+
+## 9. Penggunaan AI assistant
 
 Proyek ini dibangun dengan bantuan AI (Claude) sebagai pair programmer. Pembagian kerjanya:
 

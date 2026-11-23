@@ -388,8 +388,8 @@ export default async function LandingPage() {
         </div>
       </footer>
 
-      <div className="h-14 sm:hidden" aria-hidden="true" />
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface px-4 py-1.5 sm:hidden">
+      <div className="h-[57px] sm:hidden" aria-hidden="true" />
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface px-4 py-1 sm:hidden">
         <Link
           href={user ? "/dashboard" : "/daftar"}
           className="flex h-11 w-full items-center justify-center gap-2 rounded-sm bg-primary text-base font-medium text-white"
