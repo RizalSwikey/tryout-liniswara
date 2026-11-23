@@ -2,7 +2,7 @@
 
 Website tryout online untuk penerbit Liniswara (PT Lini Suara Nusantara). Pengguna mendaftar, memasukkan kode akses, menonton materi video, lalu mengerjakan tryout 10 soal berisi 3 pernyataan Benar/Salah per soal. Skor dihitung di server.
 
-- **Demo:** belum dideploy. Langkahnya ada di bagian 8.
+- **Demo:** https://test-linisuara-nusantara.vercel.app
 - **Repo:** https://github.com/RizalSwikey/tryout-liniswara
 - **Kode redeem untuk penilai:** `LINIS30HARI1` (aktif 30 hari, 100 pemakaian)
 
