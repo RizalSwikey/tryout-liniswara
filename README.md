@@ -5,6 +5,7 @@ Website tryout online untuk penerbit Liniswara (PT Lini Suara Nusantara). Penggu
 - **Demo:** https://test-linisuara-nusantara.vercel.app
 - **Repo:** https://github.com/RizalSwikey/tryout-liniswara
 - **Kode redeem untuk penilai:** `LINIS30HARI1` (aktif 30 hari, 100 pemakaian)
+- **Akun uji siap pakai:** `penilai@liniswara.test` / `RahasiaUji123` — sudah berlangganan sampai 24 Desember 2026. Pendaftaran akun baru sedang gagal karena kuota email konfirmasi Supabase habis; lihat bagian 6.
 
 Kode contoh lain (lihat `supabase/seed.sql`):
 
@@ -89,6 +90,10 @@ Tabel `redeem_codes` tidak punya policy `select` untuk `authenticated` dan hak a
 - Submit ganda ditolak (`ATTEMPT_SUBMITTED`); `attempt_answers` punya `unique(attempt_id, statement_id)`.
 - Timer di klien hanya tampilan: nilainya selalu `deadline_at - sekarang`, dihitung ulang tiap detik, jadi tab yang tidur tidak menggeser waktu.
 
+### Kenapa fungsi Vercel di `hnd1`
+
+Database Supabase project ini ada di Tokyo. `vercel.json` memaksa fungsi jalan di `hnd1` (Tokyo), bukan `sin1` (Singapore, default terdekat dari Indonesia), supaya tiap query tidak menyeberang dua kali. Terukur di produksi: TTFB `/materi/[slug]` median 493 ms setelah pindah, dengan ~330 ms di antaranya biaya tetap platform (halaman tanpa query DB juga ~330 ms), jadi sisa ~160 ms adalah verifikasi JWT + satu query. `getClaims()` dipakai alih-alih `getUser()` karena memverifikasi tanda tangan JWT lewat JWKS yang di-cache, tanpa memanggil server Auth di setiap permintaan.
+
 ### Catatan versi dan konvensi
 
 Versi paket dicek dengan `npm view` pada 23 Nov 2026: `next` 16.4.6, `tailwindcss` 4.3.5 (terpasang 4.3.3 dari template `create-next-app`), `shadcn` 4.23.0, `@supabase/supabase-js` 2.119.2, `@supabase/ssr` 0.12.7, `lite-youtube-embed` 0.4.0, `zod` 4.6.7.
@@ -162,7 +167,7 @@ docs/design-brief.md             brief desain (acuan visual)
 
 ## 6. Keterbatasan yang diketahui
 
-- **Belum diuji dengan kredensial Supabase asli.** Alur HTTP penuh (daftar → redeem → kerjakan → submit) belum dijalankan terhadap project Supabase sungguhan; yang sudah dijalankan adalah uji database terhadap Postgres lokal (RLS, RPC, deadline) dan `pnpm build`. Lihat bagian 7.
+- **Pendaftaran akun baru gagal di project Supabase saat ini.** Opsi "Confirm email" masih aktif, sehingga `signUp` mengirim email konfirmasi; kuota kirim email bawaan Supabase (beberapa email per jam) sudah terpakai dan kini setiap pendaftaran dijawab `429 over_email_send_rate_limit`, yang tampil sebagai "Pendaftaran gagal diproses". Perbaikannya satu setelan, bukan kode: Authentication → Sign In / Providers → Email → matikan **Confirm email**, lalu tunggu kuota kirim pulih. Untuk penilai, akun uji `penilai@liniswara.test` / `RahasiaUji123` sudah aktif dan berlangganan sampai 24 Desember 2026.
 - `supabase test db` (pgTAP) tidak dipakai karena Docker tidak tersedia di mesin pengembangan; pengujian memakai skrip SQL biasa lewat `psql`.
 - Tidak ada rate limiting pada percobaan login dan redeem. Supabase punya rate limit bawaan untuk auth, tetapi redeem hanya dibatasi oleh aturan kode.
 - Attempt aktif tidak dikunci ke satu perangkat. Membuka tryout di dua tab memungkinkan dua tab menulis jawaban ke attempt yang sama (yang terakhir menang), meski submit kedua akan ditolak.
@@ -188,10 +193,14 @@ docs/design-brief.md             brief desain (acuan visual)
 | `pnpm typecheck` | lulus, tanpa error |
 | `pnpm build` | lulus, 11 route (10 halaman + `/_not-found`) dan `Proxy (Middleware)` |
 | `pnpm db:test` (Postgres 18, migrasi + data uji) | lulus: anon ditolak di semua tabel; user tanpa langganan tidak melihat materi/tryout; redeem sukses memperpanjang 30 → 37 hari; kode kedaluwarsa/nonaktif/tidak dikenal/dipakai ulang/kuota habis ditolak dengan kode error yang benar; payload attempt aktif tidak memuat `is_true`/`explanation`; skor dihitung server = 1 dari 3 pada data uji; submit ganda ditolak; attempt lewat deadline auto-finalisasi dengan skor 0 |
-| Kunci tidak bocor | diperiksa di dua tempat: (a) uji SQL memastikan payload aktif tanpa `is_true`/`explanation`, (b) `statements` tanpa policy dan tanpa grant untuk `authenticated` |
-| Alur penuh di dev server + URL produksi | **belum dijalankan** (butuh kredensial Supabase asli); yang sudah dicek: route terproteksi tanpa sesi mengembalikan 307 ke `/masuk?next=…`, landing/masuk/daftar 200 |
-| Tampilan 375px | dicek dengan Chrome headless: landing, masuk, daftar, dan halaman soal (payload contoh) tanpa scroll horizontal (`scrollWidth == clientWidth == 375`); target sentuh tombol Benar/Salah 44px |
+| Alur penuh di URL produksi | dijalankan di Chrome headless terhadap `test-linisuara-nusantara.vercel.app` dengan akun uji: login → `/materi` daftar 5 materi → halaman putar memuat `lite-youtube` (`videoid` benar, 0 `<iframe>` sebelum diklik) → kerjakan tryout 10 soal → jawab 30 pernyataan (tersimpan tiap klik, terverifikasi `Terjawab 10 dari 10`) → kirim → halaman hasil menampilkan 16/30, 53%, 16 benar 14 salah 0 kosong, 0 soal 3/3 benar, waktu 08:22, 30 pernyataan dijawab, dan pembahasan per pernyataan beserta kunci |
+| Kasus gagal redeem di produksi | `SALAHSALAH12` → "Kode tidak dikenali…"; `KEDALUWARSA1` → "Kode sudah kedaluwarsa…"; `SEKALI1X2026` (kuota habis) → "Kode sudah mencapai batas pemakaian."; `LINIS30HARI1` dipakai ulang akun yang sama → "Kode ini sudah kamu pakai…". Semuanya 200 di `/dashboard` dengan pesan `role="alert"`, langganan tidak berubah |
+| Route terproteksi tanpa sesi | `curl` tanpa cookie: `/dashboard`, `/materi`, `/riwayat`, `/tryout/<id>/kerjakan` → `307` ke `/masuk?next=%2Fmateri`; `/`, `/masuk`, `/daftar` → `200` |
+| Submit setelah submit / buka ulang `/kerjakan` | diarahkan `307` ke halaman hasil terakhir (sebelumnya 404 — diperbaiki di commit `867ed03`) |
+| Kunci tidak bocor | respons jaringan saat mengerjakan hanya `{"ok":true}` untuk tiap simpan jawaban; HTML dan payload RSC halaman `/kerjakan` dipindai: tidak ada `is_true`, `explanation`, maupun `isTrue`. Di sisi database, `statements` tanpa policy dan tanpa grant untuk `authenticated` |
+| Tampilan 375px | Chrome headless 375×812 pada `/`, `/dashboard`, `/materi`, `/riwayat`, `/kerjakan`, `/hasil`: `scrollWidth == clientWidth == 375` di semua halaman. Target sentuh 44px, kontrol Benar/Salah `radio` dengan label |
 | Demo soal di landing | diklik di browser: 3 jawaban → penghitung `3/3 dijawab`, pembahasan per pernyataan muncul |
+| Pendaftaran akun baru | **gagal** di project Supabase saat ini karena kuota email konfirmasi Supabase habis (`429`), lihat bagian 6 |
 
 ## 8. Deploy
 
@@ -221,4 +230,4 @@ Proyek ini dibangun dengan bantuan AI (Claude) sebagai pair programmer. Pembagia
 
 - **Dibantu AI:** scaffold Next.js/Tailwind/shadcn, penulisan migrasi SQL dan RPC, komponen UI, skrip uji database, penyusunan soal seed, README.
 - **Keputusan dan verifikasi:** arsitektur keamanan (RLS per operasi, `statements` tanpa policy, `security definer` dengan `for update`), interpretasi format soal, penyesuaian palet terhadap batasan kontras, serta eksekusi dan pemeriksaan hasil uji database dan build.
-- **Belum diverifikasi AI:** alur penuh di browser terhadap Supabase asli dan tampilan visual di perangkat nyata, seperti dicatat di bagian 6 dan 7.
+- **Belum diverifikasi AI:** pendaftaran akun baru (terblokir kuota email Supabase), tampilan di perangkat fisik, dan pembacaan warna di layar selain Chrome headless.
