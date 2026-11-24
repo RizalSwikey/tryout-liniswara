@@ -5,7 +5,7 @@ Website tryout online untuk penerbit Liniswara (PT Lini Suara Nusantara). Penggu
 - **Demo:** https://test-linisuara-nusantara.vercel.app
 - **Repo:** https://github.com/RizalSwikey/tryout-liniswara
 - **Kode redeem untuk penilai:** `LINIS30HARI1` (aktif 30 hari, 100 pemakaian)
-- **Akun uji siap pakai:** `penilai@liniswara.test` / `RahasiaUji123` — sudah berlangganan sampai 24 Desember 2026. Pendaftaran akun baru sedang gagal karena kuota email konfirmasi Supabase habis; lihat bagian 6.
+- **Akun uji siap pakai:** `penilai@liniswara.test` / `RahasiaUji123` — sudah berlangganan sampai 24 Desember 2026. Pendaftaran akun baru dan redeem kode sudah dicoba langsung di produksi lewat desktop dan berhasil; lihat bagian 7.
 
 Kode contoh lain (lihat `supabase/seed.sql`):
 
@@ -183,7 +183,7 @@ docs/design-brief.md             brief desain (acuan visual)
 
 ## 6. Keterbatasan yang diketahui
 
-- **Pendaftaran akun baru gagal di project Supabase saat ini.** Opsi "Confirm email" masih aktif, sehingga `signUp` mengirim email konfirmasi; kuota kirim email bawaan Supabase (beberapa email per jam) sudah terpakai dan kini setiap pendaftaran dijawab `429 over_email_send_rate_limit`, yang tampil sebagai "Pendaftaran gagal diproses". Perbaikannya satu setelan, bukan kode: Authentication → Sign In / Providers → Email → matikan **Confirm email**, lalu tunggu kuota kirim pulih. Untuk penilai, akun uji `penilai@liniswara.test` / `RahasiaUji123` sudah aktif dan berlangganan sampai 24 Desember 2026.
+- Pendaftaran akun baru sempat gagal karena kuota kirim email bawaan Supabase habis (`429 over_email_send_rate_limit`, tampil sebagai "Pendaftaran gagal diproses") selama "Confirm email" aktif. Setelah kuota pulih, pendaftaran berhasil dicoba langsung di produksi: akun baru dibuat, email dikonfirmasi, lalu kode redeem dimasukkan dan diterima. Endpoint ini tetap bergantung pada kuota email Supabase, jadi untuk pemakaian ramai matikan "Confirm email" atau pasang SMTP sendiri.
 - `supabase test db` (pgTAP) tidak dipakai karena Docker tidak tersedia di mesin pengembangan; pengujian memakai skrip SQL biasa lewat `psql`.
 - Tidak ada rate limiting pada percobaan login dan redeem. Supabase punya rate limit bawaan untuk auth, tetapi redeem hanya dibatasi oleh aturan kode.
 - Attempt aktif tidak dikunci ke satu perangkat. Membuka tryout di dua tab memungkinkan dua tab menulis jawaban ke attempt yang sama (yang terakhir menang), meski submit kedua akan ditolak.
@@ -217,7 +217,7 @@ docs/design-brief.md             brief desain (acuan visual)
 | Tampilan 375px | Chrome headless 375×812 pada `/`, `/dashboard`, `/materi`, `/riwayat`, `/kerjakan`, `/hasil`: `scrollWidth == clientWidth == 375` di semua halaman. Target sentuh 44px, kontrol Benar/Salah `radio` dengan label |
 | Demo soal di landing | diklik di browser: 3 jawaban → penghitung `3/3 dijawab`, pembahasan per pernyataan muncul |
 | Umpan balik muat dan gerak | `loading.tsx` di root + 4 rute, `error.tsx`, `not-found.tsx` ada di build; `pnpm build` mendaftarkan semuanya. Perilaku animasi (reveal sekali, geser antar soal, skor naik, getar kode ditolak) belum diukur ulang di browser pada commit `f36bdfe`; yang diperiksa hanya lolos lint/typecheck/build |
-| Pendaftaran akun baru | **gagal** di project Supabase saat ini karena kuota email konfirmasi Supabase habis (`429`), lihat bagian 6 |
+| Pendaftaran akun baru + redeem | **lulus** setelah kuota email Supabase pulih: akun baru didaftarkan lewat browser desktop di URL produksi, email dikonfirmasi, lalu kode redeem dimasukkan dan diterima, langganan aktif |
 
 ## 8. Deploy
 
@@ -241,10 +241,14 @@ Atau lewat dashboard: Add New → Project → impor `RizalSwikey/tryout-liniswar
 
 Setelah deploy, uji di URL produksi: daftar, masuk, `/materi` terkunci, redeem `LINIS30HARI1`, materi terbuka, kerjakan tryout, kirim, skor dan pembahasan tampil.
 
-## 9. Penggunaan AI assistant
+## 9. Penggunaan AI
 
-Proyek ini dibangun dengan bantuan AI (Claude) sebagai pair programmer. Pembagian kerjanya:
+Saya memakai agen AI (Claude lewat orkestrator) untuk mengerjakan proyek ini.
 
-- **Dibantu AI:** scaffold Next.js/Tailwind/shadcn, penulisan migrasi SQL dan RPC, komponen UI, skrip uji database, penyusunan soal seed, sistem gerak (token kurva, utilitas animasi, `Reveal`/`CountUp`), skeleton per rute, README.
-- **Keputusan dan verifikasi:** arsitektur keamanan (RLS per operasi, `statements` tanpa policy, `security definer` dengan `for update`), interpretasi format soal, penyesuaian palet terhadap batasan kontras, keputusan memindahkan fungsi ke `hnd1`, serta eksekusi dan pemeriksaan hasil uji database dan build.
-- **Belum diverifikasi AI:** pendaftaran akun baru (terblokir kuota email Supabase), perilaku animasi dan tampilan di perangkat fisik, serta pembacaan warna di layar selain Chrome headless.
+Yang saya lakukan: menentukan alur produk, prioritas, dan stack; menyusun prompt untuk agen; meninjau hasilnya; memutuskan arsitektur keamanan dan interpretasi format soal; menyetujui palet, teks, dan gerak; meminta perbaikan saat hasil belum sesuai (membuka ulang `/kerjakan` setelah submit, kontras border, laci nomor tertutup bilah kirim, animasi yang terlalu ramai).
+
+Yang ditulis agen AI: sebagian besar kode aplikasi (auth, redeem, materi, tryout, hasil, riwayat, landing), migrasi SQL dan fungsi RPC, komponen UI termasuk sistem gerak dan skeleton per rute, skrip uji database, soal seed, dan draf README ini.
+
+Yang dijalankan agen lalu saya periksa hasilnya: `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm db:test` di Postgres 18, alur penuh di URL produksi lewat Chrome headless, pemindaian respons jaringan untuk memastikan `is_true`/`explanation` tidak muncul, dan pengukuran tampilan 375 px.
+
+Yang belum saya verifikasi: alur di perangkat fisik/HP (pendaftaran dan redeem baru dicoba lewat desktop), perilaku animasi di perangkat fisik, dan warna di layar selain Chrome headless.
