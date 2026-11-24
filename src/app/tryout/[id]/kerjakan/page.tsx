@@ -29,7 +29,21 @@ export default async function KerjakanPage({ params }: PageProps<"/tryout/[id]/k
     );
   }
 
-  if (!attempt) notFound();
+  if (!attempt) {
+    // Tidak ada attempt aktif: kalau sudah pernah mengirim, antar ke hasil
+    // terakhir. Tanpa ini, membuka ulang /kerjakan berakhir di 404.
+    const { data: selesai } = await supabase
+      .from("attempts")
+      .select("id")
+      .eq("tryout_id", id)
+      .not("submitted_at", "is", null)
+      .order("submitted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (selesai) redirect(`/tryout/${id}/hasil/${selesai.id}`);
+    notFound();
+  }
 
   const { data: payload, error: payloadError } = await supabase.rpc("get_attempt", {
     p_attempt: attempt.id,
