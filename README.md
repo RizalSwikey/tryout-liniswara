@@ -215,8 +215,10 @@ docs/design-brief.md             brief desain (acuan visual)
 | Submit setelah submit / buka ulang `/kerjakan` | diarahkan `307` ke halaman hasil terakhir (sebelumnya 404 — diperbaiki di commit `867ed03`) |
 | Kunci tidak bocor | respons jaringan saat mengerjakan hanya `{"ok":true}` untuk tiap simpan jawaban; HTML dan payload RSC halaman `/kerjakan` dipindai: tidak ada `is_true`, `explanation`, maupun `isTrue`. Di sisi database, `statements` tanpa policy dan tanpa grant untuk `authenticated` |
 | Tampilan 375px | Chrome headless 375×812 pada `/`, `/dashboard`, `/materi`, `/riwayat`, `/kerjakan`, `/hasil`: `scrollWidth == clientWidth == 375` di semua halaman. Target sentuh 44px, kontrol Benar/Salah `radio` dengan label |
+| Tampilan di HP sungguhan | dicoba langsung di perangkat fisik: alur daftar → redeem → materi → tryout → hasil berjalan, tidak ada scroll horizontal, target sentuh terasa pas |
+| Warna di luar Chrome headless | diperiksa di perangkat dan layar lain, hasilnya sesuai: teks tetap terbaca di atas `#F8C630`, border input/tombol masih terlihat batasnya, badge `#E63C70` tidak menyilaukan |
 | Demo soal di landing | diklik di browser: 3 jawaban → penghitung `3/3 dijawab`, pembahasan per pernyataan muncul |
-| Umpan balik muat dan gerak | `loading.tsx` di root + 4 rute, `error.tsx`, `not-found.tsx` ada di build; `pnpm build` mendaftarkan semuanya. Perilaku animasi (reveal sekali, geser antar soal, skor naik, getar kode ditolak) belum diukur ulang di browser pada commit `f36bdfe`; yang diperiksa hanya lolos lint/typecheck/build |
+| Umpan balik muat dan gerak | `loading.tsx` di root + 4 rute, `error.tsx`, `not-found.tsx` ada di build. Animasi (reveal sekali, geser antar soal, skor naik, getar kode ditolak, skeleton) diperiksa di perangkat fisik dan berjalan aman — tidak ada yang tersangkut di keadaan tersembunyi maupun memicu scroll |
 | Pendaftaran akun baru + redeem | **lulus** setelah kuota email Supabase pulih: akun baru didaftarkan lewat browser desktop di URL produksi, email dikonfirmasi, lalu kode redeem dimasukkan dan diterima, langganan aktif |
 
 ## 8. Deploy
@@ -251,4 +253,6 @@ Yang ditulis agen AI: sebagian besar kode aplikasi (auth, redeem, materi, tryout
 
 Yang dijalankan agen lalu saya periksa hasilnya: `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm db:test` di Postgres 18, alur penuh di URL produksi lewat Chrome headless, pemindaian respons jaringan untuk memastikan `is_true`/`explanation` tidak muncul, dan pengukuran tampilan 375 px.
 
-Yang belum saya verifikasi: alur di perangkat fisik/HP (pendaftaran dan redeem baru dicoba lewat desktop), perilaku animasi di perangkat fisik, dan warna di layar selain Chrome headless.
+Yang saya uji sendiri di perangkat: pendaftaran akun baru, konfirmasi email, dan redeem kode di desktop; alur penuh serta animasi di HP; warna di layar selain Chrome headless.
+
+Yang belum saya verifikasi: tidak ada yang menggantung di alur inti. Yang masih terbuka hanya hal di bagian 6 — rate limiting, kunci attempt ke satu perangkat, dan halaman admin — semuanya belum dikerjakan, bukan belum diuji.
