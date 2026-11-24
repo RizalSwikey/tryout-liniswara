@@ -39,12 +39,14 @@ export default async function MateriDetailPage({ params }: PageProps<"/materi/[s
     );
   }
 
-  const { data: material, error } = await supabase
+  // Satu query: daftar materi terbit dipakai untuk mencari yang diminta
+  // sekaligus menyusun "materi lain". Daftar ini kecil dan sama untuk semua
+  // user berlangganan, jadi dua query berurutan tidak sepadan.
+  const { data: materials, error } = await supabase
     .from("materials")
     .select("id, slug, title, description, youtube_id, position")
-    .eq("slug", slug)
     .eq("is_published", true)
-    .maybeSingle();
+    .order("position");
 
   if (error) {
     return (
@@ -59,15 +61,10 @@ export default async function MateriDetailPage({ params }: PageProps<"/materi/[s
     );
   }
 
+  const material = materials?.find((m) => m.slug === slug);
   if (!material) notFound();
 
-  const { data: others } = await supabase
-    .from("materials")
-    .select("id, slug, title")
-    .eq("is_published", true)
-    .neq("id", material.id)
-    .order("position")
-    .limit(3);
+  const others = (materials ?? []).filter((m) => m.id !== material.id).slice(0, 3);
 
   return (
     <>

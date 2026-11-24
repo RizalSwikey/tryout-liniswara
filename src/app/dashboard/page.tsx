@@ -23,29 +23,30 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const params = await searchParams;
   const aktif = Boolean(subscriptionEndsAt);
 
-  const { data: tryouts, error: tryoutError } = aktif
-    ? await supabase
-        .from("tryouts")
-        .select("id, title, duration_minutes")
-        .eq("is_published", true)
-        .order("title")
-    : { data: null, error: null };
-
-  const { data: materials } = aktif
-    ? await supabase
-        .from("materials")
-        .select("id, slug, title, description")
-        .eq("is_published", true)
-        .order("position")
-        .limit(3)
-    : { data: null };
-
-  const { data: attempts } = await supabase
-    .from("attempts")
-    .select("id, tryout_id, submitted_at, score")
-    .not("submitted_at", "is", null)
-    .order("submitted_at", { ascending: false })
-    .limit(3);
+  const [{ data: tryouts, error: tryoutError }, { data: materials }, { data: attempts }] =
+    await Promise.all([
+      aktif
+        ? supabase
+            .from("tryouts")
+            .select("id, title, duration_minutes")
+            .eq("is_published", true)
+            .order("title")
+        : Promise.resolve({ data: null, error: null }),
+      aktif
+        ? supabase
+            .from("materials")
+            .select("id, slug, title, description")
+            .eq("is_published", true)
+            .order("position")
+            .limit(3)
+        : Promise.resolve({ data: null }),
+      supabase
+        .from("attempts")
+        .select("id, tryout_id, submitted_at, score")
+        .not("submitted_at", "is", null)
+        .order("submitted_at", { ascending: false })
+        .limit(3),
+    ]);
 
   const nama = profile?.full_name ?? user.email ?? "Kamu";
   const sudahRedeem = params.redeemed === "1";

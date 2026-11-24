@@ -33,20 +33,20 @@ export default async function proxy(request: NextRequest) {
   );
 
   // Wajib dipanggil sebelum response dibuat: menyegarkan token dan menulis cookie.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() memverifikasi tanda tangan JWT secara lokal memakai JWKS yang
+  // di-cache; getUser() akan menghubungi server Auth di setiap permintaan.
+  const { data: claimsData } = await supabase.auth.getClaims();
 
   const { pathname } = request.nextUrl;
 
-  if (!user && PROTECTED.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+  if (!claimsData?.claims?.sub && PROTECTED.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     const url = request.nextUrl.clone();
     url.pathname = "/masuk";
     url.search = `?next=${encodeURIComponent(pathname)}`;
     return NextResponse.redirect(url);
   }
 
-  if (user && AUTH_PAGES.includes(pathname)) {
+  if (claimsData?.claims?.sub && AUTH_PAGES.includes(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     url.search = "";
