@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { siteOrigin } from "@/lib/site-url";
 import {
   loginSchema,
   redeemSchema,
@@ -33,15 +34,37 @@ export async function registerAction(_prev: FormState, formData: FormData): Prom
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: { data: { full_name: parsed.data.fullName } },
+    options: {
+      data: { full_name: parsed.data.fullName },
+      // Tanpa ini Supabase memakai Site URL project (default localhost:3000)
+      // dan tautan konfirmasi menunjuk ke mesin pengembang.
+      emailRedirectTo: `${await siteOrigin()}/auth/confirm`,
+    },
   });
 
-  if (error) return { error: translateAuthError(error.message) };
+  if (error) {
+    // "already registered": akun mungkin ada tetapi belum dikonfirmasi.
+    // Daripada buntu, kirim ulang tautan konfirmasi.
+    if (error.message.toLowerCase().includes("already registered")) {
+      const { error: ulang } = await supabase.auth.resend({
+        type: "signup",
+        email: parsed.data.email,
+        options: { emailRedirectTo: `${await siteOrigin()}/auth/confirm` },
+      });
+      if (!ulang) {
+        return {
+          error:
+            "Email ini sudah terdaftar. Tautan konfirmasi baru sudah dikirim, atau masuk langsung bila akunmu sudah aktif.",
+        };
+      }
+    }
+    return { error: translateAuthError(error.message) };
+  }
 
   if (!data.session) {
     return {
       error:
-        "Akun dibuat, tetapi Supabase meminta konfirmasi email. Buka tautan konfirmasi di kotak masuk, lalu masuk.",
+        "Akun dibuat, tetapi perlu konfirmasi email. Buka tautan di kotak masuk, lalu masuk.",
     };
   }
 

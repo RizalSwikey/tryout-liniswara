@@ -17,6 +17,9 @@ export default async function MasukPage({
   const { next } = await searchParams;
   const nextPath = typeof next === "string" && next.startsWith("/") && !next.startsWith("//") ? next : "";
 
+  const konfirmasi = (await searchParams).konfirmasi;
+  const pesanKonfirmasi = typeof konfirmasi === "string" ? konfirmasi : "";
+
   return (
     <>
       <SiteHeader />
@@ -25,6 +28,15 @@ export default async function MasukPage({
         <p className="mt-1 mb-6 text-muted-ink">
           Lanjutkan tryout dan materi yang sedang kamu kerjakan.
         </p>
+
+        {pesanKonfirmasi && (
+          <p
+            role="alert"
+            className="mb-4 flex gap-2 rounded-sm border border-line-strong bg-surface px-3 py-2 text-sm text-ink"
+          >
+            Konfirmasi email gagal: {pesanKonfirmasi} Minta tautan baru dengan mendaftar ulang memakai email yang sama.
+          </p>
+        )}
 
         <AuthForm
           action={loginAction}
