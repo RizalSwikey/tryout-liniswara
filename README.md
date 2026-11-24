@@ -27,6 +27,9 @@ Kode contoh lain (lihat `supabase/seed.sql`):
 - Riwayat percobaan dan skor.
 - Seed: 1 tryout (10 soal × 3 pernyataan, kunci + pembahasan), 5 materi video terverifikasi, 3 kode redeem.
 - Landing page satu halaman dengan demo soal interaktif tanpa login.
+- Umpan balik muat: spinner di root, skeleton per rute (`/dashboard`, `/materi`, `/materi/[slug]`, `/tryout/[id]`) supaya navigasi tidak terasa kosong, plus `error.tsx` dan `not-found.tsx` yang menyebut langkah berikutnya.
+- Gerak terarah: token kurva dan durasi di `globals.css`, `press` untuk umpan balik sentuh, geser horizontal antar soal mengikuti arah, laci nomor dan dialog konfirmasi slide, skor di halaman hasil naik 0 → nilai akhir ~800 ms, kode redeem yang ditolak menggetarkan input sekali. `prefers-reduced-motion` mematikan geser/skala/shimmer, sisanya tinggal warna dan opacity.
+- Reveal sekali jalan: elemen landing muncul saat masuk viewport lewat `IntersectionObserver`, dan hanya sekali. Tanpa JavaScript konten tetap tampil karena keadaan tersembunyi butuh kelas `js` yang dipasang skrip inline di `<head>`.
 
 ### Sebagian
 
@@ -94,6 +97,12 @@ Tabel `redeem_codes` tidak punya policy `select` untuk `authenticated` dan hak a
 
 Database Supabase project ini ada di Tokyo. `vercel.json` memaksa fungsi jalan di `hnd1` (Tokyo), bukan `sin1` (Singapore, default terdekat dari Indonesia), supaya tiap query tidak menyeberang dua kali. Terukur di produksi: TTFB `/materi/[slug]` median 493 ms setelah pindah, dengan ~330 ms di antaranya biaya tetap platform (halaman tanpa query DB juga ~330 ms), jadi sisa ~160 ms adalah verifikasi JWT + satu query. `getClaims()` dipakai alih-alih `getUser()` karena memverifikasi tanda tangan JWT lewat JWKS yang di-cache, tanpa memanggil server Auth di setiap permintaan.
 
+### Gerak, dan kenapa tetap terbaca tanpa JavaScript
+
+Satu set token di `globals.css`: dua kurva (`--ease-out` untuk masuk, `--ease-in` untuk keluar) dan tiga durasi (140/220/320 ms). Yang dianimasikan hanya `transform`, `opacity`, dan warna — tidak ada animasi `width`/`top` yang memaksa layout tiap frame. Utilitasnya `press`, `enter-page`, `enter-rise`, `slide-next`, `slide-prev`, `drawer-in`, `fade-in`, `shimmer`, `shake-once`.
+
+Reveal bergantung pada kelas `js` di `<html>` yang dipasang skrip inline di `<head>` sebelum paint. Aturan `.js [data-reveal]:not(.enter-rise) { opacity: 0 }` hanya berlaku bila kelas itu ada, jadi tanpa JavaScript seluruh konten tetap tampil. `Reveal` memakai `IntersectionObserver` dan memutusnya setelah elemen pertama kali terlihat; `CountUp` menulis angka langsung ke simpul DOM, bukan lewat state, supaya tidak memicu render ulang tiap frame. Keduanya melewati animasi bila `prefers-reduced-motion: reduce`.
+
 ### Catatan versi dan konvensi
 
 Versi paket dicek dengan `npm view` pada 23 Nov 2026: `next` 16.4.6, `tailwindcss` 4.3.5 (terpasang 4.3.3 dari template `create-next-app`), `shadcn` 4.23.0, `@supabase/supabase-js` 2.119.2, `@supabase/ssr` 0.12.7, `lite-youtube-embed` 0.4.0, `zod` 4.6.7.
@@ -116,7 +125,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
 ```
 
-Migrasi dan seed ke project Supabase. Cara paling singkat, lewat SQL Editor Supabase: jalankan berurutan isi `supabase/migrations/*.sql`, lalu `supabase/seed.sql`. Dengan Supabase CLI:
+Migrasi dan seed ke project Supabase. Cara paling singkat: tempel seluruh isi `supabase/setup.sql` sekali di SQL Editor (berisi 4 migrasi + seed dengan urutan sudah dirakit). Kalau memakai SQL Editor per berkas, jalankan berurutan isi `supabase/migrations/*.sql`, lalu `supabase/seed.sql`. Dengan Supabase CLI:
 
 ```bash
 supabase link --project-ref <ref>
@@ -153,7 +162,13 @@ src/
     materi/                      daftar + halaman putar video
     tryout/[id]/                 halaman pengantar, kerjakan, hasil/[attemptId]
     riwayat/                     semua percobaan
+    loading.tsx                  spinner navigasi akar
+    error.tsx not-found.tsx      halaman gagal dan 404
+    globals.css                  token warna, kurva gerak, utilitas animate
   components/                    UI: form auth, redeem, runner tryout, demo soal, lite-youtube
+    skeleton.tsx                 kerangka muat (header, baris teks, kartu)
+    reveal.tsx count-up.tsx      gerak: muncul sekali di viewport, angka naik
+    site-header.tsx              header sticky + bayangan setelah digulir
   components/ui/                 komponen shadcn (Base UI)
   lib/                           env, auth, validasi zod, format, tipe DB, klien Supabase
   proxy.ts                       refresh sesi + proteksi route (konvensi Next 16)
@@ -161,6 +176,7 @@ supabase/
   migrations/                    skema, RLS, redeem_code, RPC attempt
   tests/                         auth shim + uji RLS/RPC
   seed.sql                       soal, materi, kode redeem
+  setup.sql                      migrasi + seed dirakit jadi satu tempelan
 scripts/db-test.sh               harness uji database
 docs/design-brief.md             brief desain (acuan visual)
 ```
@@ -200,6 +216,7 @@ docs/design-brief.md             brief desain (acuan visual)
 | Kunci tidak bocor | respons jaringan saat mengerjakan hanya `{"ok":true}` untuk tiap simpan jawaban; HTML dan payload RSC halaman `/kerjakan` dipindai: tidak ada `is_true`, `explanation`, maupun `isTrue`. Di sisi database, `statements` tanpa policy dan tanpa grant untuk `authenticated` |
 | Tampilan 375px | Chrome headless 375×812 pada `/`, `/dashboard`, `/materi`, `/riwayat`, `/kerjakan`, `/hasil`: `scrollWidth == clientWidth == 375` di semua halaman. Target sentuh 44px, kontrol Benar/Salah `radio` dengan label |
 | Demo soal di landing | diklik di browser: 3 jawaban → penghitung `3/3 dijawab`, pembahasan per pernyataan muncul |
+| Umpan balik muat dan gerak | `loading.tsx` di root + 4 rute, `error.tsx`, `not-found.tsx` ada di build; `pnpm build` mendaftarkan semuanya. Perilaku animasi (reveal sekali, geser antar soal, skor naik, getar kode ditolak) belum diukur ulang di browser pada commit `f36bdfe`; yang diperiksa hanya lolos lint/typecheck/build |
 | Pendaftaran akun baru | **gagal** di project Supabase saat ini karena kuota email konfirmasi Supabase habis (`429`), lihat bagian 6 |
 
 ## 8. Deploy
@@ -207,7 +224,7 @@ docs/design-brief.md             brief desain (acuan visual)
 ### Supabase
 
 1. Buat project di dashboard Supabase (region terdekat, mis. Singapore). Catat `Project URL` dan `anon public key` dari Project Settings → API.
-2. Jalankan SQL di `supabase/migrations/` berurutan (000100 → 000400) lewat SQL Editor, lalu `supabase/seed.sql`.
+2. Jalankan SQL di `supabase/migrations/` berurutan (000100 → 000400) lewat SQL Editor, lalu `supabase/seed.sql` — atau tempel `supabase/setup.sql` sekali (isinya sama, sudah dirakit).
 3. Authentication → Providers → Email: matikan "Confirm email" bila penilai harus bisa langsung masuk setelah daftar.
 4. Jangan menyalin service role key ke mana pun di repo. Aplikasi hanya memakai anon key; semua penulisan istimewa lewat fungsi `security definer`.
 
@@ -228,6 +245,6 @@ Setelah deploy, uji di URL produksi: daftar, masuk, `/materi` terkunci, redeem `
 
 Proyek ini dibangun dengan bantuan AI (Claude) sebagai pair programmer. Pembagian kerjanya:
 
-- **Dibantu AI:** scaffold Next.js/Tailwind/shadcn, penulisan migrasi SQL dan RPC, komponen UI, skrip uji database, penyusunan soal seed, README.
-- **Keputusan dan verifikasi:** arsitektur keamanan (RLS per operasi, `statements` tanpa policy, `security definer` dengan `for update`), interpretasi format soal, penyesuaian palet terhadap batasan kontras, serta eksekusi dan pemeriksaan hasil uji database dan build.
-- **Belum diverifikasi AI:** pendaftaran akun baru (terblokir kuota email Supabase), tampilan di perangkat fisik, dan pembacaan warna di layar selain Chrome headless.
+- **Dibantu AI:** scaffold Next.js/Tailwind/shadcn, penulisan migrasi SQL dan RPC, komponen UI, skrip uji database, penyusunan soal seed, sistem gerak (token kurva, utilitas animasi, `Reveal`/`CountUp`), skeleton per rute, README.
+- **Keputusan dan verifikasi:** arsitektur keamanan (RLS per operasi, `statements` tanpa policy, `security definer` dengan `for update`), interpretasi format soal, penyesuaian palet terhadap batasan kontras, keputusan memindahkan fungsi ke `hnd1`, serta eksekusi dan pemeriksaan hasil uji database dan build.
+- **Belum diverifikasi AI:** pendaftaran akun baru (terblokir kuota email Supabase), perilaku animasi dan tampilan di perangkat fisik, serta pembacaan warna di layar selain Chrome headless.
