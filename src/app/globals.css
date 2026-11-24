@@ -62,6 +62,13 @@
   --background: var(--paper);
   --foreground: var(--ink);
   --radius: 6px;
+
+  /* Gerak: satu kurva masuk, satu kurva keluar, dua durasi. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 320ms;
 }
 
 @layer base {
@@ -70,6 +77,8 @@
   }
   html {
     -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    scroll-padding-top: 4.5rem;
   }
   body {
     @apply bg-paper text-ink;
@@ -101,6 +110,139 @@
 
 @utility tnum {
   font-variant-numeric: tabular-nums;
+}
+
+/* Gerak bersama. Hanya transform/opacity/warna yang dianimasikan. */
+@utility press {
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+@utility enter-page {
+  animation: enter-page var(--dur-base) var(--ease-out) both;
+}
+
+@utility enter-rise {
+  animation: enter-rise var(--dur-slow) var(--ease-out) both;
+}
+
+@keyframes enter-page {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@keyframes slide-next {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
+@keyframes slide-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+
+@utility slide-next {
+  animation: slide-next var(--dur-base) var(--ease-out) both;
+}
+
+@utility slide-prev {
+  animation: slide-prev var(--dur-base) var(--ease-out) both;
+}
+
+@keyframes drawer-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@utility drawer-in {
+  animation: drawer-in var(--dur-base) var(--ease-out) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@utility fade-in {
+  animation: fade-in var(--dur-fast) var(--ease-out) both;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes shake-x {
+  10%, 90% { transform: translateX(-2px); }
+  30%, 70% { transform: translateX(3px); }
+  50% { transform: translateX(-3px); }
+}
+
+@utility shimmer {
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--ink) 7%, transparent),
+      transparent
+    );
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+/* Hanya sembunyikan saat JS aktif, supaya konten tetap terbaca tanpanya. */
+.js [data-reveal]:not(.enter-rise) {
+  opacity: 0;
+}
+
+@utility shake-once {
+  animation: shake-x 260ms var(--ease-out) 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .shimmer::after {
+    display: none;
+  }
+  .press:active {
+    transform: none;
+  }
 }
 
 .prose-block p {

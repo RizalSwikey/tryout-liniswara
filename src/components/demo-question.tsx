@@ -80,13 +80,18 @@ export function DemoQuestion() {
                       />
                       <label
                         htmlFor={id}
-                        className={`flex h-11 cursor-pointer items-center justify-center gap-1 rounded-sm border text-sm font-medium select-none peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 ${
+                        className={`press flex h-11 cursor-pointer items-center justify-center gap-1 rounded-sm border text-sm font-medium select-none peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 ${
                           selected
                             ? "border-primary bg-primary text-white"
                             : "border-line-strong text-ink hover:bg-paper"
                         }`}
                       >
-                        {selected && <Check aria-hidden="true" className="size-3.5" />}
+                        <Check
+                          aria-hidden="true"
+                          className={`size-3.5 transition-[opacity,transform] duration-150 ${
+                            selected ? "scale-100 opacity-100" : "scale-75 opacity-0"
+                          }`}
+                        />
                         {val ? "Benar" : "Salah"}
                       </label>
                     </div>
@@ -95,7 +100,8 @@ export function DemoQuestion() {
               </div>
               {showKey && (
                 <p
-                  className={`mt-2 text-sm ${correct ? "text-ok" : "text-[#b3261e]"}`}
+                  key={`${value}`}
+                  className={`enter-rise mt-2 text-sm ${correct ? "text-ok" : "text-[#b3261e]"}`}
                   role="status"
                 >
                   {correct ? "Tepat. " : "Belum tepat. "}

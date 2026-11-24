@@ -32,6 +32,7 @@ export function TryoutRunner({ attempt }: { attempt: AttemptPayload }) {
   });
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
   const [index, setIndex] = useState(0);
+  const [arah, setArah] = useState<"next" | "prev">("next");
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -79,7 +80,9 @@ export function TryoutRunner({ attempt }: { attempt: AttemptPayload }) {
   );
 
   const goTo = (next: number) => {
-    setIndex(Math.max(0, Math.min(questions.length - 1, next)));
+    const clamped = Math.max(0, Math.min(questions.length - 1, next));
+    setArah(clamped >= index ? "next" : "prev");
+    setIndex(clamped);
     setMenuOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -118,8 +121,8 @@ export function TryoutRunner({ attempt }: { attempt: AttemptPayload }) {
         </div>
         <div className="h-1 w-full bg-line" role="presentation">
           <div
-            className="h-1 bg-primary transition-[width] duration-300"
-            style={{ width: `${((index + 1) / questions.length) * 100}%` }}
+            className="h-1 origin-left bg-primary transition-transform duration-300 ease-out"
+            style={{ transform: `scaleX(${(index + 1) / questions.length})` }}
           />
         </div>
       </header>
@@ -136,7 +139,10 @@ export function TryoutRunner({ attempt }: { attempt: AttemptPayload }) {
           </p>
         )}
 
-        <article key={current.id} className="animate-in fade-in-0 duration-200">
+        <article
+          key={current.id}
+          className={arah === "prev" ? "slide-prev" : "slide-next"}
+        >
           <div className="rounded-lg border border-line bg-surface p-4 sm:p-5">
             <h1 className="sr-only">Soal {current.position}</h1>
             <div className="stimulus prose-block">
@@ -246,9 +252,9 @@ export function TryoutRunner({ attempt }: { attempt: AttemptPayload }) {
             type="button"
             aria-label="Tutup daftar nomor"
             onClick={() => setMenuOpen(false)}
-            className="absolute inset-0 bg-ink/40"
+            className="fade-in absolute inset-0 bg-ink/40"
           />
-          <div className="absolute inset-x-0 bottom-0 rounded-t-xl border border-line bg-surface p-4 sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-96 sm:rounded-lg">
+          <div className="drawer-in absolute inset-x-0 bottom-0 rounded-t-xl border border-line bg-surface p-4 sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-96 sm:rounded-lg">
             <div className="flex items-center justify-between">
               <h2 id="nomor-soal" className="font-heading text-lg font-semibold text-ink">
                 Nomor soal
@@ -275,7 +281,7 @@ export function TryoutRunner({ attempt }: { attempt: AttemptPayload }) {
                       onClick={() => goTo(i)}
                       aria-current={active ? "true" : undefined}
                       aria-label={`Soal ${q.position}: ${done ? "terjawab" : "belum dijawab"}${ragu ? ", ditandai ragu" : ""}`}
-                      className={`flex h-11 w-full items-center justify-center gap-1 rounded-sm border text-sm font-medium tnum ${
+                      className={`flex h-11 w-full items-center justify-center gap-1 rounded-sm border text-sm font-medium tnum transition-colors duration-150 ${
                         done
                           ? "border-primary bg-primary text-white"
                           : "border-line-strong bg-surface text-ink"
@@ -329,9 +335,9 @@ export function TryoutRunner({ attempt }: { attempt: AttemptPayload }) {
             type="button"
             aria-label="Tutup konfirmasi"
             onClick={() => setConfirmOpen(false)}
-            className="absolute inset-0 bg-ink/40"
+            className="fade-in absolute inset-0 bg-ink/40"
           />
-          <div className="relative w-full max-w-md rounded-t-xl border border-line bg-surface p-5 sm:rounded-lg">
+          <div className="drawer-in relative w-full max-w-md rounded-t-xl border border-line bg-surface p-5 sm:rounded-lg">
             <h2 id="konfirmasi-kirim" className="font-heading text-xl font-semibold text-ink">
               Kirim jawaban sekarang?
             </h2>
@@ -408,7 +414,7 @@ function StatementCard({
               />
               <label
                 htmlFor={id}
-                className={`flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-sm border text-sm font-medium select-none peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 ${
+                className={`press flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-sm border text-sm font-medium select-none peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 ${
                   selected
                     ? val
                       ? "border-ok bg-[color-mix(in_srgb,var(--ok),white_90%)] text-ok"
@@ -416,7 +422,12 @@ function StatementCard({
                     : "border-line-strong bg-surface text-ink hover:bg-paper"
                 }`}
               >
-                {selected && <Check aria-hidden="true" className="size-4" />}
+                <Check
+                  aria-hidden="true"
+                  className={`size-4 transition-[opacity,transform] duration-150 ${
+                    selected ? "scale-100 opacity-100" : "scale-75 opacity-0"
+                  }`}
+                />
                 {val ? "Benar" : "Salah"}
               </label>
             </div>

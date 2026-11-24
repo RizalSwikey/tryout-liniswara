@@ -27,7 +27,22 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="id" className={`${literata.variable} ${jakarta.variable}`}>
+    <html
+      lang="id"
+      // Kelas `js` ditambahkan skrip di bawah sebelum paint, jadi atribut ini
+      // memang berbeda dari HTML server. Itu disengaja.
+      suppressHydrationWarning
+      className={`${literata.variable} ${jakarta.variable}`}
+    >
+      <head>
+        {/* Menandai JS aktif sebelum paint; animasi reveal hanya berlaku bila
+            kelas ini ada, jadi konten tetap tampil tanpa JavaScript. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.documentElement.classList.add('js')`,
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );

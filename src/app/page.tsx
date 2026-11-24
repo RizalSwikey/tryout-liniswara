@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { DemoQuestion } from "@/components/demo-question";
+import { Reveal } from "@/components/reveal";
+import { ScrollHeader } from "@/components/site-header";
 import { getSession } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -111,22 +113,22 @@ export default async function LandingPage() {
         Lewati ke isi halaman
       </a>
 
-      <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur-none">
+      <ScrollHeader>
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 px-4">
-          <Link href="/" aria-label="Liniswara, ke atas halaman" className="rounded-sm">
+          <Link href="/" aria-label="Liniswara, ke atas halaman" className="press rounded-sm">
             <Logo />
           </Link>
           <nav aria-label="Navigasi halaman" className="hidden items-center gap-1 text-sm sm:flex">
-            <a href="#cara-kerja" className="rounded-sm px-3 py-2 text-muted-ink hover:text-ink">
+            <a href="#cara-kerja" className="press rounded-sm px-3 py-2 text-muted-ink hover:text-ink">
               Cara kerja
             </a>
-            <a href="#isi" className="rounded-sm px-3 py-2 text-muted-ink hover:text-ink">
+            <a href="#isi" className="press rounded-sm px-3 py-2 text-muted-ink hover:text-ink">
               Isi produk
             </a>
-            <a href="#orang-tua" className="rounded-sm px-3 py-2 text-muted-ink hover:text-ink">
+            <a href="#orang-tua" className="press rounded-sm px-3 py-2 text-muted-ink hover:text-ink">
               Untuk orang tua
             </a>
-            <a href="#faq" className="rounded-sm px-3 py-2 text-muted-ink hover:text-ink">
+            <a href="#faq" className="press rounded-sm px-3 py-2 text-muted-ink hover:text-ink">
               FAQ
             </a>
           </nav>
@@ -134,18 +136,18 @@ export default async function LandingPage() {
             {user ? (
               <Link
                 href="/dashboard"
-                className="inline-flex h-10 items-center rounded-sm bg-primary px-3.5 text-sm font-medium text-white hover:bg-primary-dark"
+                className="press inline-flex h-10 items-center rounded-sm bg-primary px-3.5 text-sm font-medium text-white hover:bg-primary-dark"
               >
                 {nama ? nama.split(" ")[0] : "Dashboard"}
               </Link>
             ) : (
               <>
-                <Link href="/masuk" className="rounded-sm px-2.5 py-2 text-sm text-muted-ink hover:text-ink">
+                <Link href="/masuk" className="press rounded-sm px-2.5 py-2 text-sm text-muted-ink hover:text-ink">
                   Masuk
                 </Link>
                 <Link
                   href="/daftar"
-                  className="inline-flex h-10 items-center rounded-sm bg-primary px-3.5 text-sm font-medium text-white hover:bg-primary-dark"
+                  className="press inline-flex h-10 items-center rounded-sm bg-primary px-3.5 text-sm font-medium text-white hover:bg-primary-dark"
                 >
                   Daftar
                 </Link>
@@ -153,42 +155,55 @@ export default async function LandingPage() {
             )}
           </div>
         </div>
-      </header>
+      </ScrollHeader>
 
       <main>
         <section className="mx-auto max-w-5xl px-4 pt-8 pb-10 sm:pt-14" aria-labelledby="hero-judul">
           <div className="grid items-start gap-8 lg:grid-cols-[1fr_1.05fr] lg:gap-12">
             <div>
-              <p className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-muted-ink">
+              <p className="enter-rise inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-muted-ink">
                 <span aria-hidden="true" className="size-1.5 rounded-full bg-mark" />
                 Tryout literasi dari penerbit Liniswara
               </p>
-              <h1 id="hero-judul" className="mt-4 text-[32px] leading-[1.15] font-bold text-ink sm:text-[40px]">
+              <h1
+                id="hero-judul"
+                className="enter-rise mt-4 text-[32px] leading-[1.15] font-bold text-ink sm:text-[40px]"
+                style={{ animationDelay: "40ms" }}
+              >
                 Latihan soal Benar/Salah yang bentuknya sama dengan TKA.
               </h1>
-              <p className="mt-4 max-w-prose text-[17px] text-muted-ink">
+              <p
+                className="enter-rise mt-4 max-w-prose text-[17px] text-muted-ink"
+                style={{ animationDelay: "80ms" }}
+              >
                 10 soal, 30 pernyataan, satu stimulus per soal. Kerjakan di HP, kirim, lalu baca
                 pembahasan setiap pernyataan. Akses dibuka dengan kode dari penerbit.
               </p>
 
-              <div className="mt-6 flex flex-wrap items-center gap-2">
+              <div
+                className="enter-rise mt-6 flex flex-wrap items-center gap-2"
+                style={{ animationDelay: "120ms" }}
+              >
                 <Link
                   href={user ? "/dashboard" : "/daftar"}
-                  className="inline-flex h-12 items-center gap-2 rounded-sm bg-primary px-5 text-base font-medium text-white hover:bg-primary-dark"
+                  className="press inline-flex h-12 items-center gap-2 rounded-sm bg-primary px-5 text-base font-medium text-white hover:bg-primary-dark"
                 >
                   {user ? "Buka dashboard" : "Mulai tryout"}
                   <ArrowRight aria-hidden="true" className="size-4" />
                 </Link>
                 <a
                   href="#kode"
-                  className="inline-flex h-12 items-center gap-2 rounded-sm border border-line-strong px-5 text-base font-medium text-ink hover:bg-surface"
+                  className="press inline-flex h-12 items-center gap-2 rounded-sm border border-line-strong px-5 text-base font-medium text-ink hover:bg-surface"
                 >
                   <KeyRound aria-hidden="true" className="size-4" />
                   Punya kode akses?
                 </a>
               </div>
 
-              <dl className="mt-7 grid max-w-md grid-cols-3 gap-4 border-t border-line pt-4 text-sm">
+              <dl
+                className="enter-rise mt-7 grid max-w-md grid-cols-3 gap-4 border-t border-line pt-4 text-sm"
+                style={{ animationDelay: "160ms" }}
+              >
                 <div>
                   <dt className="text-muted-ink">Soal</dt>
                   <dd className="font-heading text-2xl font-semibold tnum text-ink">10</dd>
@@ -204,12 +219,12 @@ export default async function LandingPage() {
               </dl>
             </div>
 
-            <div className="lg:sticky lg:top-20">
+            <Reveal className="lg:sticky lg:top-20" delay={80}>
               <DemoQuestion />
               <p className="mt-2 text-xs text-muted-ink">
                 Contoh soal di atas memakai teks pendek buatan sendiri, bukan soal ujian resmi.
               </p>
-            </div>
+            </Reveal>
           </div>
         </section>
 
@@ -221,7 +236,12 @@ export default async function LandingPage() {
             <p className="mt-1 max-w-prose text-muted-ink">Empat langkah, semuanya di browser.</p>
             <ol className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {CARA_KERJA.map(({ icon: Icon, judul, isi }, i) => (
-                <li key={judul} className="rounded-lg border border-line bg-paper p-4">
+                <Reveal
+                  as="li"
+                  key={judul}
+                  delay={i * 70}
+                  className="press rounded-lg border border-line bg-paper p-4 hover:border-line-strong"
+                >
                   <div className="flex items-center gap-2">
                     <span className="flex size-8 items-center justify-center rounded-full border border-line bg-surface text-sm font-semibold tnum text-muted-ink">
                       {i + 1}
@@ -230,7 +250,7 @@ export default async function LandingPage() {
                   </div>
                   <h3 className="mt-3 font-heading text-lg font-semibold text-ink">{judul}</h3>
                   <p className="mt-1 text-sm text-muted-ink">{isi}</p>
-                </li>
+                </Reveal>
               ))}
             </ol>
           </div>
@@ -244,12 +264,16 @@ export default async function LandingPage() {
             Yang benar-benar ada di dalam akun setelah kode diaktifkan.
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {ISI.map(({ icon: Icon, judul, isi }) => (
-              <article key={judul} className="rounded-lg border border-line bg-surface p-4">
+            {ISI.map(({ icon: Icon, judul, isi }, i) => (
+              <Reveal
+                key={judul}
+                delay={i * 60}
+                className="rounded-lg border border-line bg-surface p-4"
+              >
                 <Icon aria-hidden="true" className="size-5 text-primary" />
                 <h3 className="mt-2.5 font-heading text-lg font-semibold text-ink">{judul}</h3>
                 <p className="mt-1 text-sm text-muted-ink">{isi}</p>
-              </article>
+              </Reveal>
             ))}
           </div>
         </section>

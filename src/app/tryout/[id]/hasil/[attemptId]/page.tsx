@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Check, RotateCcw, X } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
+import { CountUp } from "@/components/count-up";
 import { requireSession } from "@/lib/auth";
 import type { AttemptPayload } from "@/lib/supabase/types";
 import { formatDurasi } from "@/lib/format";
@@ -72,7 +73,7 @@ export default async function HasilPage({ params }: PageProps<"/tryout/[id]/hasi
           </h2>
           <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
             <p className="font-heading text-5xl font-bold tnum text-ink">
-              {score}
+              <CountUp value={score} />
               <span className="text-2xl font-normal text-muted-ink"> / {total}</span>
             </p>
             <p className="text-lg font-medium tnum text-muted-ink">{persen}%</p>
@@ -118,10 +119,14 @@ export default async function HasilPage({ params }: PageProps<"/tryout/[id]/hasi
 
         <h2 className="mt-8 font-heading text-xl font-semibold text-ink">Pembahasan per pernyataan</h2>
         <div className="mt-3 space-y-4">
-          {data.questions.map((q) => {
+          {data.questions.map((q, qi) => {
             const benar = q.statements.filter((s) => s.answer !== null && s.answer === s.is_true).length;
             return (
-              <section key={q.id} className="rounded-lg border border-line bg-surface">
+              <section
+                key={q.id}
+                className="enter-rise rounded-lg border border-line bg-surface"
+                style={{ animationDelay: `${Math.min(qi, 8) * 45}ms` }}
+              >
                 <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-3">
                   <h3 className="font-heading text-lg font-semibold text-ink">Soal {q.position}</h3>
                   <p className="text-sm tnum text-muted-ink">
