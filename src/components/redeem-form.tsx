@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { AlertCircle, CheckCircle2, KeyRound } from "lucide-react";
+import { AlertCircle, CheckCircle2, KeyRound, Loader2 } from "lucide-react";
 import { redeemAction } from "@/app/actions/auth";
 import type { FormState } from "@/lib/validation";
 import { Input } from "@/components/ui/input";
@@ -18,18 +18,21 @@ export function RedeemForm({ compact = false }: { compact?: boolean }) {
           <KeyRound aria-hidden="true" className="size-4 text-muted-ink" />
           Kode akses
         </Label>
-        <Input
-          id="code"
-          name="code"
-          autoComplete="one-time-code"
-          autoCapitalize="characters"
-          spellCheck={false}
-          placeholder="Contoh: LINIS2026OK1"
-          maxLength={24}
-          aria-invalid={Boolean(state.error)}
-          aria-describedby={state.error ? "code-error" : "code-help"}
-          className="h-11 rounded-sm border-line-strong bg-surface px-3 font-mono text-base tracking-[0.08em] uppercase"
-        />
+        {/* Kunci berubah saat kode ditolak, supaya getaran singkat diputar sekali. */}
+        <div key={state.error ?? "ok"} className={state.error ? "shake-once" : undefined}>
+          <Input
+            id="code"
+            name="code"
+            autoComplete="one-time-code"
+            autoCapitalize="characters"
+            spellCheck={false}
+            placeholder="Contoh: LINIS2026OK1"
+            maxLength={24}
+            aria-invalid={Boolean(state.error)}
+            aria-describedby={state.error ? "code-error" : "code-help"}
+            className="h-11 rounded-sm border-line-strong bg-surface px-3 font-mono text-base tracking-[0.08em] uppercase"
+          />
+        </div>
         <p id="code-help" className="text-sm text-muted-ink">
           12 karakter, huruf dan angka. Tanpa spasi.
         </p>
@@ -44,9 +47,16 @@ export function RedeemForm({ compact = false }: { compact?: boolean }) {
       <Button
         type="submit"
         disabled={pending}
-        className="h-11 w-full rounded-sm bg-primary text-base font-medium text-white hover:bg-primary-dark sm:w-auto sm:px-6"
+        className="press h-11 w-full rounded-sm bg-primary text-base font-medium text-white hover:bg-primary-dark sm:w-auto sm:px-6"
       >
-        {pending ? "Memeriksa kode…" : "Aktifkan kode"}
+        {pending ? (
+          <>
+            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+            Memeriksa kode…
+          </>
+        ) : (
+          "Aktifkan kode"
+        )}
       </Button>
 
       {compact && (

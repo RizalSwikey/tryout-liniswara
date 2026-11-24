@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Clock3, LockKeyhole, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock3, LockKeyhole } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
+import { MaterialCard } from "@/components/material-card";
 import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Materi video" };
@@ -70,22 +71,12 @@ export default async function MateriIndexPage() {
           <ul className="mt-6 space-y-3">
             {materials.map((m, i) => (
               <li key={m.id}>
-                <Link
+                <MaterialCard
                   href={`/materi/${m.slug}`}
-                  className="flex items-start gap-3 rounded-lg border border-line bg-surface p-4 hover:border-line-strong"
-                >
-                  <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full border border-line text-sm font-semibold tnum text-muted-ink">
-                    {i + 1}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block font-heading text-lg font-semibold text-ink">{m.title}</span>
-                    <span className="mt-0.5 block text-sm text-muted-ink">{m.description}</span>
-                    <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-                      <PlayCircle aria-hidden="true" className="size-4" />
-                      Tonton video
-                    </span>
-                  </span>
-                </Link>
+                  nomor={i + 1}
+                  title={m.title}
+                  description={m.description}
+                />
               </li>
             ))}
           </ul>
