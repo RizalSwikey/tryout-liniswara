@@ -16,34 +16,38 @@ import { createServerSupabase } from "@/lib/supabase/server";
  * sesi tidak pernah terbentuk.
  */
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = request.nextUrl;
+  const { searchParams } = request.nextUrl;
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
+  const email = searchParams.get("email") ?? "";
 
   // Supabase mengirim error lewat query bila tautan kedaluwarsa/sudah dipakai.
   const errorDescription = searchParams.get("error_description");
-  if (errorDescription) return keMasuk(request, errorDescription);
+  if (errorDescription) return keKonfirmasi(request, "gagal", errorDescription, email);
 
   const supabase = await createServerSupabase();
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) return keMasuk(request, error.message);
-    return NextResponse.redirect(new URL("/dashboard", origin));
+    if (error) return keKonfirmasi(request, "gagal", error.message, email);
+    return keKonfirmasi(request, "berhasil", "", email);
   }
 
   if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
-    if (error) return keMasuk(request, error.message);
-    return NextResponse.redirect(new URL("/dashboard", origin));
+    if (error) return keKonfirmasi(request, "gagal", error.message, email);
+    return keKonfirmasi(request, "berhasil", "", email);
   }
 
-  return keMasuk(request, "Tautan konfirmasi tidak lengkap. Minta tautan baru.");
+  return keKonfirmasi(request, "gagal", "Tautan konfirmasi tidak lengkap.", email);
 }
 
-function keMasuk(request: NextRequest, pesan: string) {
-  const url = new URL("/masuk", request.nextUrl.origin);
-  url.searchParams.set("konfirmasi", pesan);
+/** Hasil ditampilkan sebagai halaman, bukan sekadar notifikasi di form daftar. */
+function keKonfirmasi(request: NextRequest, status: "berhasil" | "gagal", pesan: string, email: string) {
+  const url = new URL("/konfirmasi", request.nextUrl.origin);
+  url.searchParams.set("status", status);
+  if (pesan) url.searchParams.set("pesan", pesan);
+  if (email) url.searchParams.set("email", email);
   return NextResponse.redirect(url);
 }

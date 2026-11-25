@@ -62,10 +62,9 @@ export async function registerAction(_prev: FormState, formData: FormData): Prom
   }
 
   if (!data.session) {
-    return {
-      error:
-        "Akun dibuat, tetapi perlu konfirmasi email. Buka tautan di kotak masuk, lalu masuk.",
-    };
+    // Confirm email aktif: tidak ada sesi sampai tautan diklik. Antar ke
+    // halaman konfirmasi, bukan sekadar pesan di form.
+    redirect(`/konfirmasi?email=${encodeURIComponent(parsed.data.email)}`);
   }
 
   redirect("/dashboard");
