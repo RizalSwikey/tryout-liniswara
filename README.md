@@ -2,10 +2,10 @@
 
 Website tryout online untuk penerbit Liniswara (PT Lini Suara Nusantara). Pengguna mendaftar, memasukkan kode akses, menonton materi video, lalu mengerjakan tryout 10 soal berisi 3 pernyataan Benar/Salah per soal. Skor dihitung di server.
 
-- **Demo:** https://test-linisuara-nusantara.vercel.app
+- **Demo:** https://test-linisuara-nusantara.vercel.app (307 ke host kanonik `test-linisuara-nusantara-rizal-akbar-syah-fauzan-putra.vercel.app`)
 - **Repo:** https://github.com/RizalSwikey/tryout-liniswara
 - **Kode redeem untuk penilai:** `LINIS30HARI1` (aktif 30 hari, 100 pemakaian)
-- **Akun uji siap pakai:** `penilai@liniswara.test` / `RahasiaUji123` — sudah berlangganan sampai 24 Desember 2026. Pendaftaran akun baru dan redeem kode sudah dicoba langsung di produksi lewat desktop dan berhasil; lihat bagian 7.
+- **Akun uji siap pakai:** `penilai@liniswara.test` / `RahasiaUji123` — sudah berlangganan sampai 24 Desember 2026. Pendaftaran akun baru lewat UI **belum tuntas diuji**: signup API menerima akun, tetapi pengiriman email konfirmasi sedang kena kuota Supabase; lihat bagian 6.
 
 Kode contoh lain (lihat `supabase/seed.sql`):
 
@@ -183,7 +183,11 @@ docs/design-brief.md             brief desain (acuan visual)
 
 ## 6. Keterbatasan yang diketahui
 
-- Pendaftaran akun baru sempat gagal karena kuota kirim email bawaan Supabase habis (`429 over_email_send_rate_limit`, tampil sebagai "Pendaftaran gagal diproses") selama "Confirm email" aktif. Setelah kuota pulih, pendaftaran berhasil dicoba langsung di produksi: akun baru dibuat, email dikonfirmasi, lalu kode redeem dimasukkan dan diterima. Endpoint ini tetap bergantung pada kuota email Supabase, jadi untuk pemakaian ramai matikan "Confirm email" atau pasang SMTP sendiri.
+- **Pendaftaran akun baru belum bisa diverifikasi sampai tuntas.** Dua sebab, keduanya di sisi Supabase, bukan kode:
+  1. **Kuota email habis.** `/auth/v1/settings` melaporkan `mailer_autoconfirm: false`, jadi setiap `signUp` mengirim email konfirmasi dan memakai kuota. Saat ini Supabase menjawab `429 over_email_send_rate_limit` untuk setiap alamat, yang tampil sebagai "Terlalu banyak percobaan. Tunggu beberapa menit."
+  2. **Site URL project masih `http://localhost:3000`.** Terbukti dari probe: `GET /auth/v1/verify?token=bogus&type=signup&redirect_to=<domain Vercel>&hellip;` tetap diarahkan ke `http://localhost:3000`, sedangkan `redirect_to` ke `localhost:3000` dan `localhost:3200` diterima apa adanya. Artinya tautan konfirmasi yang dikirim Supabase menunjuk ke mesin lokal, apa pun yang dikirim aplikasi.
+  Perbaikan (dashboard, satu menit): **Authentication → URL Configuration** → **Site URL** = `https://test-linisuara-nusantara-rizal-akbar-syah-fauzan-putra.vercel.app`, **Redirect URLs** += `https://test-linisuara-nusantara*.vercel.app/**` dan `http://localhost:3200/**`. Lalu pilih salah satu: matikan **Confirm email** (Authentication → Sign In / Providers → Email) agar pendaftaran langsung menghasilkan sesi, atau pasang SMTP sendiri untuk menghapus batas kuota.
+  Sisi aplikasi sudah siap dan teruji: `signUp` mengirim `emailRedirectTo=<origin>/auth/confirm` (terbukti muncul sebagai `redirect_to` di request), `/auth/confirm` menukar `?code` lewat `exchangeCodeForSession` dan `?token_hash` lewat `verifyOtp`, dan semua cabang gagal diarahkan ke `/masuk?konfirmasi=…` dengan pesan yang terbaca.
 - `supabase test db` (pgTAP) tidak dipakai karena Docker tidak tersedia di mesin pengembangan; pengujian memakai skrip SQL biasa lewat `psql`.
 - Tidak ada rate limiting pada percobaan login dan redeem. Supabase punya rate limit bawaan untuk auth, tetapi redeem hanya dibatasi oleh aturan kode.
 - Attempt aktif tidak dikunci ke satu perangkat. Membuka tryout di dua tab memungkinkan dua tab menulis jawaban ke attempt yang sama (yang terakhir menang), meski submit kedua akan ditolak.
@@ -219,7 +223,7 @@ docs/design-brief.md             brief desain (acuan visual)
 | Warna di luar Chrome headless | diperiksa di perangkat dan layar lain, hasilnya sesuai: teks tetap terbaca di atas `#F8C630`, border input/tombol masih terlihat batasnya, badge `#E63C70` tidak menyilaukan |
 | Demo soal di landing | diklik di browser: 3 jawaban → penghitung `3/3 dijawab`, pembahasan per pernyataan muncul |
 | Umpan balik muat dan gerak | `loading.tsx` di root + 4 rute, `error.tsx`, `not-found.tsx` ada di build. Animasi (reveal sekali, geser antar soal, skor naik, getar kode ditolak, skeleton) diperiksa di perangkat fisik dan berjalan aman — tidak ada yang tersangkut di keadaan tersembunyi maupun memicu scroll |
-| Pendaftaran akun baru + redeem | **lulus** setelah kuota email Supabase pulih: akun baru didaftarkan lewat browser desktop di URL produksi, email dikonfirmasi, lalu kode redeem dimasukkan dan diterima, langganan aktif |
+| Pendaftaran akun baru | **belum tuntas**. Lewat UI: `signUp` dijawab `429 over_email_send_rate_limit` dari Supabase (`mailer_autoconfirm: false`, kuota kirim email habis), UI menampilkan "Terlalu banyak percobaan. Tunggu beberapa menit." Lewat API langsung: akun baru berhasil dibuat (`id`, `confirmation_sent_at` terisi). `/auth/confirm` teruji di semua cabang gagal (`?code`, `?token_hash`, `?error_description`, kosong) → 307 ke `/masuk?konfirmasi=…`. Pembuatan sesi setelah konfirmasi belum bisa diuji karena emailnya tidak bisa dikirim. |
 
 ## 8. Deploy
 
@@ -227,8 +231,9 @@ docs/design-brief.md             brief desain (acuan visual)
 
 1. Buat project di dashboard Supabase (region terdekat, mis. Singapore). Catat `Project URL` dan `anon public key` dari Project Settings → API.
 2. Jalankan SQL di `supabase/migrations/` berurutan (000100 → 000400) lewat SQL Editor, lalu `supabase/seed.sql` — atau tempel `supabase/setup.sql` sekali (isinya sama, sudah dirakit).
-3. Authentication → Providers → Email: matikan "Confirm email" bila penilai harus bisa langsung masuk setelah daftar.
-4. Jangan menyalin service role key ke mana pun di repo. Aplikasi hanya memakai anon key; semua penulisan istimewa lewat fungsi `security definer`.
+3. **Authentication → URL Configuration.** Isi **Site URL** dengan domain produksi (jangan biarkan `http://localhost:3000`, nilai bawaan project baru). Tambahkan ke **Redirect URLs** pola `https://<domain-produksi>/**` dan `http://localhost:3200/**`. Tanpa langkah ini semua tautan konfirmasi email menunjuk ke mesin lokal — sudah dibuktikan lewat probe `/auth/v1/verify?redirect_to=<domain Vercel>`, yang tetap diarahkan ke `http://localhost:3000`.
+4. **Confirm email.** Aplikasi memakai `flowType: "pkce"` dan mengirim `emailRedirectTo=<origin>/auth/confirm`. Bila **Confirm email** aktif (bawaan), tiap `signUp` mengirim email dan memakai kuota kirim Supabase yang kecil; saat habis, Supabase menjawab `429 over_email_send_rate_limit`. Untuk penilaian, matikan **Confirm email** (Authentication → Sign In / Providers → Email) agar daftar langsung menghasilkan sesi. Bila dibiarkan aktif, selesaikan langkah 3 dan pasang SMTP sendiri.
+5. Jangan menyalin service role key ke mana pun di repo. Aplikasi hanya memakai anon key; semua penulisan istimewa lewat fungsi `security definer`.
 
 ### Vercel
 
@@ -251,8 +256,6 @@ Yang saya lakukan: menentukan alur produk, prioritas, dan stack; menyusun prompt
 
 Yang ditulis agen AI: sebagian besar kode aplikasi (auth, redeem, materi, tryout, hasil, riwayat, landing), migrasi SQL dan fungsi RPC, komponen UI termasuk sistem gerak dan skeleton per rute, skrip uji database, soal seed, dan draf README ini.
 
-Yang dijalankan agen lalu saya periksa hasilnya: `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm db:test` di Postgres 18, alur penuh di URL produksi lewat Chrome headless, pemindaian respons jaringan untuk memastikan `is_true`/`explanation` tidak muncul, dan pengukuran tampilan 375 px.
+Yang dijalankan agen lalu saya periksa hasilnya: `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm db:test` di Postgres 18, alur penuh di URL produksi lewat Chrome headless, pemindaian respons jaringan untuk memastikan `is_true`/`explanation` tidak muncul, pengukuran tampilan 375 px, dan audit alur daftar/konfirmasi email (probe `/auth/v1/verify`, `/auth/v1/settings`, uji `/auth/confirm` per cabang).
 
-Yang saya uji sendiri di perangkat: pendaftaran akun baru, konfirmasi email, dan redeem kode di desktop; alur penuh serta animasi di HP; warna di layar selain Chrome headless.
-
-Yang belum saya verifikasi: tidak ada yang menggantung di alur inti. Yang masih terbuka hanya hal di bagian 6 — rate limiting, kunci attempt ke satu perangkat, dan halaman admin — semuanya belum dikerjakan, bukan belum diuji.
+Yang belum bisa diverifikasi siapa pun saat ini: penyelesaian konfirmasi email dari kotak masuk sampai sesi terbentuk, karena project Supabase masih memakai Site URL `http://localhost:3000` dan kuota kirim emailnya habis. Dua hal itu setelan dashboard, bukan kode; langkah perbaikannya ada di bagian 6 dan 8. Yang masih terbuka selain itu hanya yang memang belum dikerjakan: rate limiting, kunci attempt ke satu perangkat, dan halaman admin.
