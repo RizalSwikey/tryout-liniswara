@@ -20,6 +20,7 @@ Kode contoh lain (lihat `supabase/seed.sql`):
 ### Selesai
 
 - Pendaftaran dan login email + kata sandi, logout, route terproteksi (`/dashboard`, `/materi`, `/tryout`, `/riwayat`).
+- Halaman konfirmasi email `/konfirmasi` dengan tiga keadaan: menunggu (instruksi tiga langkah), terkonfirmasi, dan tautan tidak berlaku. Tiap keadaan punya tombol kirim ulang yang memanggil `auth.resend()`; pendaftaran tanpa sesi langsung diarahkan ke sini, bukan sekadar pesan di form.
 - Redeem kode lewat RPC Postgres atomik: validasi (aktif, belum kedaluwarsa, kuota, belum dipakai akun itu), catat redemption, naikkan `used_count`, buat/perpanjang langganan dalam satu transaksi.
 - Materi video: daftar dan halaman putar dengan `lite-youtube-embed` (thumbnail dulu, host `youtube-nocookie.com`, `rel=0`), terkunci bila tidak ada langganan aktif — dicek di server lewat RLS, bukan hanya menyembunyikan tombol.
 - Tryout: satu soal per layar, 3 pernyataan Benar/Salah per soal, timer dari `deadline_at` server, jawaban tersimpan tiap klik, laci grid 10 nomor dengan 4 state (kosong/terjawab/ragu/aktif) yang dibedakan ikon + warna, tombol "Tandai ragu" per soal, konfirmasi kirim menyebut jumlah soal belum dijawab.
@@ -133,7 +134,7 @@ supabase db push
 psql "$SUPABASE_DB_URL" -f supabase/seed.sql
 ```
 
-Di dashboard Supabase, matikan "Confirm email" bila ingin mendaftar lalu langsung masuk tanpa membuka email (Authentication → Providers → Email). Bila dibiarkan aktif, aplikasi menampilkan pesan agar pengguna mengonfirmasi email lebih dulu.
+Di dashboard Supabase, matikan "Confirm email" bila ingin mendaftar lalu langsung masuk tanpa membuka email (Authentication → Providers → Email). Bila dibiarkan aktif, pendaftaran diarahkan ke `/konfirmasi` dengan instruksi membuka email.
 
 ```bash
 pnpm dev          # http://localhost:3000
@@ -158,6 +159,7 @@ src/
     page.tsx                     landing satu halaman + demo soal
     actions/                     Server Actions (auth, redeem, tryout)
     masuk/ daftar/               autentikasi
+    konfirmasi/                  halaman tunggu/hasil konfirmasi email
     dashboard/                   status langganan, tryout, materi terbaru
     materi/                      daftar + halaman putar video
     tryout/[id]/                 halaman pengantar, kerjakan, hasil/[attemptId]
@@ -187,7 +189,7 @@ docs/design-brief.md             brief desain (acuan visual)
   1. **Kuota email habis.** `/auth/v1/settings` melaporkan `mailer_autoconfirm: false`, jadi setiap `signUp` mengirim email konfirmasi dan memakai kuota. Saat ini Supabase menjawab `429 over_email_send_rate_limit` untuk setiap alamat, yang tampil sebagai "Terlalu banyak percobaan. Tunggu beberapa menit."
   2. **Site URL project masih `http://localhost:3000`.** Terbukti dari probe: `GET /auth/v1/verify?token=bogus&type=signup&redirect_to=<domain Vercel>&hellip;` tetap diarahkan ke `http://localhost:3000`, sedangkan `redirect_to` ke `localhost:3000` dan `localhost:3200` diterima apa adanya. Artinya tautan konfirmasi yang dikirim Supabase menunjuk ke mesin lokal, apa pun yang dikirim aplikasi.
   Perbaikan (dashboard, satu menit): **Authentication → URL Configuration** → **Site URL** = `https://test-linisuara-nusantara-rizal-akbar-syah-fauzan-putra.vercel.app`, **Redirect URLs** += `https://test-linisuara-nusantara*.vercel.app/**` dan `http://localhost:3200/**`. Lalu pilih salah satu: matikan **Confirm email** (Authentication → Sign In / Providers → Email) agar pendaftaran langsung menghasilkan sesi, atau pasang SMTP sendiri untuk menghapus batas kuota.
-  Sisi aplikasi sudah siap dan teruji: `signUp` mengirim `emailRedirectTo=<origin>/auth/confirm` (terbukti muncul sebagai `redirect_to` di request), `/auth/confirm` menukar `?code` lewat `exchangeCodeForSession` dan `?token_hash` lewat `verifyOtp`, dan semua cabang gagal diarahkan ke `/masuk?konfirmasi=…` dengan pesan yang terbaca.
+  Sisi aplikasi sudah siap dan teruji: `signUp` mengirim `emailRedirectTo=<origin>/auth/confirm` (terbukti muncul sebagai `redirect_to` di request), `/auth/confirm` menukar `?code` lewat `exchangeCodeForSession` dan `?token_hash` lewat `verifyOtp`, dan semua cabang (berhasil maupun gagal) diarahkan ke `/konfirmasi?status=…` yang menampilkan keadaan, pesan server, dan tombol kirim ulang.
 - `supabase test db` (pgTAP) tidak dipakai karena Docker tidak tersedia di mesin pengembangan; pengujian memakai skrip SQL biasa lewat `psql`.
 - Tidak ada rate limiting pada percobaan login dan redeem. Supabase punya rate limit bawaan untuk auth, tetapi redeem hanya dibatasi oleh aturan kode.
 - Attempt aktif tidak dikunci ke satu perangkat. Membuka tryout di dua tab memungkinkan dua tab menulis jawaban ke attempt yang sama (yang terakhir menang), meski submit kedua akan ditolak.
@@ -211,7 +213,7 @@ docs/design-brief.md             brief desain (acuan visual)
 | --- | --- |
 | `pnpm lint` | lulus, tanpa error/warning |
 | `pnpm typecheck` | lulus, tanpa error |
-| `pnpm build` | lulus, 11 route (10 halaman + `/_not-found`) dan `Proxy (Middleware)` |
+| `pnpm build` | lulus, 13 route (12 halaman + `/_not-found`) dan `Proxy (Middleware)` |
 | `pnpm db:test` (Postgres 18, migrasi + data uji) | lulus: anon ditolak di semua tabel; user tanpa langganan tidak melihat materi/tryout; redeem sukses memperpanjang 30 → 37 hari; kode kedaluwarsa/nonaktif/tidak dikenal/dipakai ulang/kuota habis ditolak dengan kode error yang benar; payload attempt aktif tidak memuat `is_true`/`explanation`; skor dihitung server = 1 dari 3 pada data uji; submit ganda ditolak; attempt lewat deadline auto-finalisasi dengan skor 0 |
 | Alur penuh di URL produksi | dijalankan di Chrome headless terhadap `test-linisuara-nusantara.vercel.app` dengan akun uji: login → `/materi` daftar 5 materi → halaman putar memuat `lite-youtube` (`videoid` benar, 0 `<iframe>` sebelum diklik) → kerjakan tryout 10 soal → jawab 30 pernyataan (tersimpan tiap klik, terverifikasi `Terjawab 10 dari 10`) → kirim → halaman hasil menampilkan 16/30, 53%, 16 benar 14 salah 0 kosong, 0 soal 3/3 benar, waktu 08:22, 30 pernyataan dijawab, dan pembahasan per pernyataan beserta kunci |
 | Kasus gagal redeem di produksi | `SALAHSALAH12` → "Kode tidak dikenali…"; `KEDALUWARSA1` → "Kode sudah kedaluwarsa…"; `SEKALI1X2026` (kuota habis) → "Kode sudah mencapai batas pemakaian."; `LINIS30HARI1` dipakai ulang akun yang sama → "Kode ini sudah kamu pakai…". Semuanya 200 di `/dashboard` dengan pesan `role="alert"`, langganan tidak berubah |
@@ -223,7 +225,8 @@ docs/design-brief.md             brief desain (acuan visual)
 | Warna di luar Chrome headless | diperiksa di perangkat dan layar lain, hasilnya sesuai: teks tetap terbaca di atas `#F8C630`, border input/tombol masih terlihat batasnya, badge `#E63C70` tidak menyilaukan |
 | Demo soal di landing | diklik di browser: 3 jawaban → penghitung `3/3 dijawab`, pembahasan per pernyataan muncul |
 | Umpan balik muat dan gerak | `loading.tsx` di root + 4 rute, `error.tsx`, `not-found.tsx` ada di build. Animasi (reveal sekali, geser antar soal, skor naik, getar kode ditolak, skeleton) diperiksa di perangkat fisik dan berjalan aman — tidak ada yang tersangkut di keadaan tersembunyi maupun memicu scroll |
-| Pendaftaran akun baru | **belum tuntas**. Lewat UI: `signUp` dijawab `429 over_email_send_rate_limit` dari Supabase (`mailer_autoconfirm: false`, kuota kirim email habis), UI menampilkan "Terlalu banyak percobaan. Tunggu beberapa menit." Lewat API langsung: akun baru berhasil dibuat (`id`, `confirmation_sent_at` terisi). `/auth/confirm` teruji di semua cabang gagal (`?code`, `?token_hash`, `?error_description`, kosong) → 307 ke `/masuk?konfirmasi=…`. Pembuatan sesi setelah konfirmasi belum bisa diuji karena emailnya tidak bisa dikirim. |
+| Pendaftaran akun baru | **belum tuntas end-to-end**. Lewat UI: `signUp` dijawab `429 over_email_send_rate_limit` dari Supabase (`mailer_autoconfirm: false`, kuota kirim email habis), UI menampilkan "Terlalu banyak percobaan. Tunggu beberapa menit." Lewat API langsung: akun baru berhasil dibuat (`id`, `confirmation_sent_at` terisi). `/auth/confirm` teruji di semua cabang gagal (`?code`, `?token_hash`, `?error_description`, kosong) → 307 ke `/konfirmasi?status=gagal`. Pembuatan sesi setelah konfirmasi belum bisa diuji karena emailnya tidak bisa dikirim. |
+| Halaman `/konfirmasi` | ketiga keadaan diuji di dev 3200 dan produksi: menunggu (200, instruksi 3 langkah, email dari `?email`), berhasil (200, CTA ke `/dashboard` bila sesi ada, `/masuk` bila tidak), gagal (200, memuat pesan server + tombol kirim ulang). `scrollWidth == clientWidth == 390` di 390 px. Tombol kirim ulang memanggil `resend()` sungguhan dan menampilkan "Email konfirmasi dikirim ulang. Periksa kotak masuk." — kuota habis tampil sebagai pesan batas kirim, bukan error mentah. |
 
 ## 8. Deploy
 
