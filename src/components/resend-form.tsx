@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { resendConfirmationAction } from "@/app/actions/konfirmasi";
 
 /**
  * Tombol "Kirim ulang". Server Action mengembalikan pesan apa adanya; tidak
- * ada status yang ditebak di klien. Tombol nonaktif selama proses supaya
- * klik berulang tidak memboroskan kuota email Supabase.
+ * ada status yang ditebak di klien. Bila alamat tidak diketahui (tautan
+ * kedaluwarsa datang tanpa email), pengguna mengetiknya sendiri - kalau tidak,
+ * tombolnya mati tanpa jalan keluar.
  */
 export function ResendForm({ email }: { email: string }) {
+  const id = useId();
+  const [alamat, setAlamat] = useState(email);
   const [pending, start] = useTransition();
   const [hasil, setHasil] = useState<{ ok: boolean; message: string } | null>(null);
 
@@ -18,6 +21,24 @@ export function ResendForm({ email }: { email: string }) {
       <p className="text-sm text-muted-ink">
         Tidak menemukan emailnya? Periksa folder spam, atau kirim ulang.
       </p>
+
+      {!email && (
+        <div className="mt-3">
+          <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-ink">
+            Alamat email akun
+          </label>
+          <input
+            id={id}
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            value={alamat}
+            onChange={(e) => setAlamat(e.target.value)}
+            placeholder="nama@email.com"
+            className="h-11 w-full rounded-sm border border-line-strong bg-paper px-3 text-base text-ink placeholder:text-muted-ink focus:border-primary focus:outline-2 focus:outline-offset-1 focus:outline-primary"
+          />
+        </div>
+      )}
 
       {hasil && (
         <p
@@ -35,8 +56,8 @@ export function ResendForm({ email }: { email: string }) {
 
       <button
         type="button"
-        disabled={pending || !email}
-        onClick={() => start(async () => setHasil(await resendConfirmationAction(email)))}
+        disabled={pending || !alamat}
+        onClick={() => start(async () => setHasil(await resendConfirmationAction(alamat)))}
         className="press mt-3 inline-flex h-11 items-center gap-2 rounded-sm border border-line-strong px-4 text-sm font-medium text-ink hover:bg-paper disabled:opacity-50"
       >
         {pending ? (

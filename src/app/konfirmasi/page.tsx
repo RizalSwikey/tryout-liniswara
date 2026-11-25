@@ -54,7 +54,7 @@ export default async function KonfirmasiPage({ searchParams }: PageProps<"/konfi
             {pesan ? ` Server menjawab: ${pesan}` : ""}
           </p>
           <p className="mt-4 text-muted-ink">
-            Minta tautan baru dari halaman masuk, atau kirim ulang di bawah ini bila kamu tahu alamat emailnya.
+            Minta tautan baru di bawah ini. Masukkan alamat email akunmu, lalu buka email yang datang.
           </p>
           <ResendForm email={email} />
           <p className="mt-6 text-sm text-muted-ink">
